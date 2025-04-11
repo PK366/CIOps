@@ -20,7 +20,7 @@ spec:
       // - name: service-account
       //   mountPath: /var/run/secret/cloud.google.com
       - name: kube-config
-        mountPath: /root/kube     
+        mountPath: /root/.kube     
     resources:
       requests:
         memory: "256Mi"
