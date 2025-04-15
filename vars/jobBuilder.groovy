@@ -79,7 +79,8 @@ spec:
                     repoSet.add(buildConfig.getImageName());                    
                 }  
 
-                jobDslScript.append("""
+                jobDslScript.append(
+                '''
                 pipelineJob("${jobConfigs.get(i).getName()}") {
                     logRotator(-1, 5, -1, -1)
                     parameters {  
@@ -107,7 +108,7 @@ spec:
                                         url("${entry.getKey()}")
                                         credentials('git_read')
                                     } 
-                                    branch ('\\${BRANCH}')
+                                    branch ('${BRANCH}')
                                     scriptPath('Jenkinsfile')
                                     extensions { }
                                 }
@@ -115,8 +116,9 @@ spec:
                         }
                     }
                 }
-                """);
-            }
+                '''
+            )
+
         }
 
         repoList = String.join(",", repoSet);     
