@@ -47,7 +47,7 @@ spec:
         String configFile = './build/build-config.yml';
         Map<String,List<JobConfig>> jobConfigMap=new HashMap<>();
         StringBuilder jobDslScript = new StringBuilder();
-        List<String> allJobConfigs = new ArrayList<>();
+        List<JobConfig> allJobConfigs = new ArrayList<>();
 
         for (int i = 0; i < gitUrls.size(); i++) {
             String dirName = Utils.getDirName(gitUrls[i]);
@@ -66,11 +66,11 @@ spec:
         List<String> folders = Utils.foldersToBeCreatedOrUpdated(allJobConfigs, env);
         for (int j = 0; j < folders.size(); j++) {
             jobDslScript.append("""
-                folder("${folders[j]}")
+                folder(\"${folders[j]}\")
             """);
         }
 
-        for (Map.Entry<Integer, String> entry : jobConfigMap.entrySet()) {   
+        for (Map.Entry<String, List<JobConfig>> entry : jobConfigMap.entrySet()) {   
             List<JobConfig> jobConfigs = entry.getValue();
 
             for (int i = 0; i < jobConfigs.size(); i++) {
@@ -79,9 +79,8 @@ spec:
                     repoSet.add(buildConfig.getImageName());                    
                 }  
 
-                jobDslScript.append(
-                '''
-                pipelineJob("${jobConfigs.get(i).getName()}") {
+                jobDslScript.append("""
+                pipelineJob(\"${jobConfigs.get(i).getName()}\") {
                     logRotator(-1, 5, -1, -1)
                     parameters {  
                         gitParameterDefinition {
@@ -105,7 +104,7 @@ spec:
                             scm {
                                 git {
                                     remote {
-                                        url("${entry.getKey()}")
+                                        url(\"${entry.getKey()}\")
                                         credentials('git_read')
                                     } 
                                     branch ('${BRANCH}')
@@ -116,9 +115,9 @@ spec:
                         }
                     }
                 }
-                '''
-            )
+                """);
 
+            }
         }
 
         repoList = String.join(",", repoSet);     
@@ -141,5 +140,3 @@ spec:
         }
     }
 }
-}
-    
