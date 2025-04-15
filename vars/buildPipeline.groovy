@@ -94,6 +94,8 @@ spec:
                             }
 
                             String workDir = buildConfig.getWorkDir().replaceFirst(getCommonBasePath(buildConfig.getWorkDir(), buildConfig.getDockerFile()), "./")
+                            String dockerfilePath = buildConfig.getDockerFile()
+                            String contextPath = buildConfig.getContext()
                             String image
                             if (scmVars.BRANCH.equalsIgnoreCase("master")) {
                                 image = "${REPO_NAME}/${buildConfig.getImageName()}:v${scmVars.VERSION}-${scmVars.ACTUAL_COMMIT}-${env.BUILD_NUMBER}"
@@ -105,22 +107,24 @@ spec:
                             buildNum = "${scmVars.VERSION}"
 
                             String noPushFlag = (env.NO_PUSH?.toBoolean()) ? "--no-push" : ""
-                            String dockerfilePath = "`pwd`/${buildConfig.getDockerFile()}"
-                            String contextPath = "`pwd`/${buildConfig.getContext()}"
                             String gcrImage = "${GCR_REPO_NAME}/${buildConfig.getImageName()}:${env.BUILD_NUMBER}-${scmVars.BRANCH}-${scmVars.VERSION}-${scmVars.ACTUAL_COMMIT}"
 
                             // Debug Info
                             sh """
-                                echo "Dockerfile path: ${dockerfilePath}"
-                                echo "Context path: ${contextPath}"
-                                echo "Checking existence of Dockerfile and context..."
-                                ls -l ${dockerfilePath}
-                                ls -l ${contextPath}
+                                echo "==== Kaniko Debug Info ===="
+                                echo "PWD: \$(pwd)"
+                                echo "Dockerfile path: \$(pwd)/${dockerfilePath}"
+                                echo "Context path: \$(pwd)/${contextPath}"
+                                echo "Listing Dockerfile:"
+                                ls -l \$(pwd)/${dockerfilePath}
+                                echo "Listing Context:"
+                                ls -l \$(pwd)/${contextPath}
                                 echo "Building image: ${image}"
+                                echo "==========================="
                             """
 
                             def baseCommand = """
-                                /kaniko/executor -f ${dockerfilePath} -c ${contextPath} \\
+                                /kaniko/executor -f \$(pwd)/${dockerfilePath} -c \$(pwd)/${contextPath} \\
                                 --build-arg WORK_DIR=${workDir} \\
                                 --build-arg token=\$GIT_ACCESS_TOKEN \\
                                 --cache=true --cache-dir=/cache \\
