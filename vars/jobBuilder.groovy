@@ -64,82 +64,78 @@ spec:
         String repoList = "";
 
         List<String> folders = Utils.foldersToBeCreatedOrUpdated(allJobConfigs, env);
-                  for (int j = 0; j < folders.size(); j++) {
-                      jobDslScript.append("""
-                          folder("${folders[j]}")
-                          """);
-                    }
+        for (int j = 0; j < folders.size(); j++) {
+            jobDslScript.append("""
+                folder("${folders[j]}")
+            """);
+        }
 
         for (Map.Entry<Integer, String> entry : jobConfigMap.entrySet()) {   
-
             List<JobConfig> jobConfigs = entry.getValue();
 
-        for (int i = 0; i < jobConfigs.size(); i++) {
+            for (int i = 0; i < jobConfigs.size(); i++) {
+                for (int j = 0; j < jobConfigs.get(i).getBuildConfigs().size(); j++) {
+                    BuildConfig buildConfig = jobConfigs.get(i).getBuildConfigs().get(j);
+                    repoSet.add(buildConfig.getImageName());                    
+                }  
 
-            for(int j=0; j<jobConfigs.get(i).getBuildConfigs().size(); j++){
-                BuildConfig buildConfig = jobConfigs.get(i).getBuildConfigs().get(j);
-                repoSet.add(buildConfig.getImageName());                    
-            }  
-
-            repoList = String.join(",", repoSet);     
-
-            jobDslScript.append("""
-            pipelineJob("${jobConfigs.get(i).getName()}") {
-                logRotator(-1, 5, -1, -1)
-                parameters {  
-                  gitParameterDefinition {
-                        name('BRANCH')
-                        type('PT_BRANCH_TAG')
-                        description('') 
-                        branch('')      
-                        useRepository('')                     
-                        defaultValue('origin/master') 
-                        branchFilter('.*')
-                        tagFilter('*')
-                        sortMode('ASCENDING_SMART')
-                        selectedValue('DEFAULT')
-                        quickFilterEnabled(true)
-                        listSize('5')                 
-                }
-                  booleanParam('ALT_REPO_PUSH', false, 'Check to push images to GCR')
-            }
-                definition {
-                    cpsScm {
-                        scm {
-                            git{
-                                remote {
-                                    url("${entry.getKey()}")
-                                    credentials('git_read')
-                                } 
-                                branch ('\${BRANCH}')
-                                scriptPath('Jenkinsfile')
-                                extensions { }
+                jobDslScript.append("""
+                pipelineJob("${jobConfigs.get(i).getName()}") {
+                    logRotator(-1, 5, -1, -1)
+                    parameters {  
+                        gitParameterDefinition {
+                            name('BRANCH')
+                            type('PT_BRANCH_TAG')
+                            description('') 
+                            branch('')      
+                            useRepository('')                     
+                            defaultValue('origin/master') 
+                            branchFilter('.*')
+                            tagFilter('*')
+                            sortMode('ASCENDING_SMART')
+                            selectedValue('DEFAULT')
+                            quickFilterEnabled(true)
+                            listSize('5')                 
+                        }
+                        booleanParam('ALT_REPO_PUSH', false, 'Check to push images to GCR')
+                    }
+                    definition {
+                        cpsScm {
+                            scm {
+                                git {
+                                    remote {
+                                        url("${entry.getKey()}")
+                                        credentials('git_read')
+                                    } 
+                                    branch ('\\${BRANCH}')
+                                    scriptPath('Jenkinsfile')
+                                    extensions { }
+                                }
                             }
                         }
-
                     }
                 }
+                """);
             }
-""");
-        }
         }
 
+        repoList = String.join(",", repoSet);     
+
         stage('Building jobs') {
-           jobDsl scriptText: jobDslScript.toString()
+            jobDsl scriptText: jobDslScript.toString()
         }
 
         stage('Creating Repositories in DockerHub') {
-                    withEnv(["REPO_LIST=${repoList}"
-                    ]) {
-                        container(name: 'build-utils', shell: '/bin/sh') {
-                            sh (script:'sh /tmp/scripts/create_repo.sh')
-                           //sh (script:'echo \$REPO_LIST')
-                        }
-                    }
+            withEnv(["REPO_LIST=${repoList}"]) {
+                container(name: 'build-utils', shell: '/bin/sh') {
+                    // Inject the script dynamically from the shared library
+                    writeFile file: '/tmp/scripts/create_repo.sh', text: libraryResource('scripts/create_repo.sh')
+                    sh 'chmod +x /tmp/scripts/create_repo.sh'
+                    sh '/tmp/scripts/create_repo.sh'
+                }
+            }
         }
-                
 
+        }
     }
-
-}
 }
