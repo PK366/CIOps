@@ -1,145 +1,71 @@
-import org.egov.jenkins.ConfigParser
-import org.egov.jenkins.Utils
-import org.egov.jenkins.models.JobConfig
-import org.egov.jenkins.models.BuildConfig
+library 'ci-libs'
 
-def call(Map params) {
+def call(Map pipelineParams) {
 
-    podTemplate(yaml: """
+podTemplate(yaml: """
 kind: Pod
 metadata:
-  name: build-utils
+  name: egov-deployer
 spec:
   containers:
-  - name: build-utils
-    image: egovio/build-utils:7-master-95e76687
-    imagePullPolicy: IfNotPresent
+  - name: egov-deployer
+    image: egovio/egov-deployer:3-master-931c51ff
     command:
     - cat
     tty: true
     env:
-      - name: DOCKER_UNAME
-        valueFrom:
-          secretKeyRef:
-            name: jenkins-credentials
-            key: dockerUserName
-      - name: DOCKER_UPASS
-        valueFrom:
-          secretKeyRef:
-            name: jenkins-credentials
-            key: dockerPassword
-      - name: DOCKER_NAMESPACE
-        value: sparrowsoftech
-      - name: DOCKER_GROUP_NAME  
-        value: dev
+      - name: "GOOGLE_APPLICATION_CREDENTIALS"
+        value: "/var/run/secret/cloud.google.com/service-account.json"
+    volumeMounts:
+      - name: kube-config
+        mountPath: /root/.kube
     resources:
       requests:
-        memory: "768Mi"
-        cpu: "250m"
+        memory: "256Mi"
+        cpu: "200m"
       limits:
-        memory: "1024Mi"
-        cpu: "500m"                
+        memory: "256Mi"
+        cpu: "200m"
+  volumes:
+  - name: kube-config
+    secret:
+        secretName: "${pipelineParams.environment}-kube-config"
 """
     ) {
         node(POD_LABEL) {
-        
-        List<String> gitUrls = params.urls;
-        String configFile = './build/build-config.yml';
-        Map<String,List<JobConfig>> jobConfigMap=new HashMap<>();
-        StringBuilder jobDslScript = new StringBuilder();
-        List<String> allJobConfigs = new ArrayList<>();
-
-        for (int i = 0; i < gitUrls.size(); i++) {
-            String dirName = Utils.getDirName(gitUrls[i]);
-            dir(dirName) {
-                 git url: gitUrls[i], credentialsId: 'git_read'
-                 def yaml = readYaml file: configFile;
-                 List<JobConfig> jobConfigs = ConfigParser.populateConfigs(yaml.config, env);
-                 jobConfigMap.put(gitUrls[i],jobConfigs);
-                 allJobConfigs.addAll(jobConfigs);
-            }
-        }
-        
-        Set<String> repoSet = new HashSet<>();
-        String repoList = "";
-
-        List<String> folders = Utils.foldersToBeCreatedOrUpdated(allJobConfigs, env);
-                  for (int j = 0; j < folders.size(); j++) {
-                      jobDslScript.append("""
-                          folder("${folders[j]}")
-                          """);
-                    }
-
-        for (Map.Entry<Integer, String> entry : jobConfigMap.entrySet()) {   
-
-            List<JobConfig> jobConfigs = entry.getValue();
-
-        for (int i = 0; i < jobConfigs.size(); i++) {
-
-            for(int j=0; j<jobConfigs.get(i).getBuildConfigs().size(); j++){
-                BuildConfig buildConfig = jobConfigs.get(i).getBuildConfigs().get(j);
-                repoSet.add(buildConfig.getImageName());                    
-            }  
-
-            repoList = String.join(",", repoSet);     
-
-            jobDslScript.append("""
-            pipelineJob("${jobConfigs.get(i).getName()}") {
-                logRotator(-1, 5, -1, -1)
-                parameters {  
-                  gitParameterDefinition {
-                        name('BRANCH')
-                        type('PT_BRANCH_TAG')
-                        description('') 
-                        branch('')      
-                        useRepository('')                     
-                        defaultValue('origin/master') 
-                        branchFilter('.*')
-                        tagFilter('*')
-                        sortMode('ASCENDING_SMART')
-                        selectedValue('DEFAULT')
-                        quickFilterEnabled(true)
-                        listSize('5')                 
+          git url: pipelineParams.repo, branch: pipelineParams.branch, credentialsId: 'git_read'
+           
+            // Adding the "Export Kubeconfig Secret" stage
+            stage('Export Kubeconfig Secret') {
+                container(name: 'egov-deployer', shell: '/bin/sh') {
+                    sh """
+                        # Create the .kube directory
+                        #mkdir -p kube
+                        
+                        # Extract the kubeconfig from the secret and write it to a file
+                        #kubectl get secret ${pipelineParams.environment}-kube-config -n jenkins -o jsonpath='{.data.config}' | base64 -d > kube/config
+                        
+                        # Optionally, set KUBECONFIG environment variable to use this kubeconfig
+                        export KUBECONFIG=/root/.kube/config
+                        kubectl config get-contexts
+                        kubectl config current-context
+                        aws-iam-authenticator version
+                        kubectl get nodes
+                        pwd && ls -la config-as-code/helm/charts
+                    """
                 }
-                  booleanParam('ALT_REPO_PUSH', false, 'Check to push images to GCR')
-            }
-                definition {
-                    cpsScm {
-                        scm {
-                            git{
-                                remote {
-                                    url("${entry.getKey()}")
-                                    credentials('git_read')
-                                } 
-                                branch ('\${BRANCH}')
-                                scriptPath('Jenkinsfile')
-                                extensions { }
+          
+           // git url: pipelineParams.repo, branch: pipelineParams.branch, credentialsId: 'git_read'
+                stage('Deploy Images') {
+                        container(name: 'egov-deployer', shell: '/bin/sh') {
+                            sh """
+                                /opt/egov/egov-deployer deploy --helm-dir `pwd`/${pipelineParams.helmDir} -c=${env.CLUSTER_CONFIGS}  -e ${pipelineParams.environment} "${env.IMAGES}"
+                            """
                             }
-                        }
-
-                    }
                 }
-            }
-""");
         }
-        }
-
-        stage('Building jobs') {
-           jobDsl scriptText: jobDslScript.toString()
-        }
-
-        stage('Creating Repositories in DockerHub') {
-                    withEnv(["REPO_LIST=${repoList}"
-                    ]) {
-                        container(name: 'build-utils', shell: '/bin/sh') {
-                            sh (script:'sh /tmp/scripts/create_repo.sh')
-                           //sh (script:'echo \$REPO_LIST')
-                        }
-                    }
-        }
-                
-
     }
+
 
 }
 }
