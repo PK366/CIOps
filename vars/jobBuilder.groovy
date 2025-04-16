@@ -135,6 +135,9 @@ spec:
                             sh 'cat /tmp/scripts/create_repo.sh'
                             sh 'echo "----------------------------------"'
                             sh (script:'sh /tmp/scripts/create_repo.sh')
+                            sh 'echo "Files in /tmp/scripts:"'
+                            sh 'ls -la /tmp/scripts'
+
                             //sh (script:'echo \$REPO_LIST')
                         }
                     }
