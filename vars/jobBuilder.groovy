@@ -129,11 +129,13 @@ spec:
         }
 
         stage('Creating Repositories in DockerHub') {
-                    withEnv(["REPO_LIST=${repoList}"
-                    ]) {
+                    withEnv(["REPO_LIST=${repoList}"]) {
                         container(name: 'build-utils', shell: '/bin/sh') {
+                            sh 'echo "--- Contents of create_repo.sh ---"'
+                            sh 'cat /tmp/scripts/create_repo.sh'
+                            sh 'echo "----------------------------------"'
                             sh (script:'sh /tmp/scripts/create_repo.sh')
-                            sh (script:'echo \$REPO_LIST')
+                            //sh (script:'echo \$REPO_LIST')
                         }
                     }
         }
