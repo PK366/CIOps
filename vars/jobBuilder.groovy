@@ -133,7 +133,7 @@ spec:
                     ]) {
                         container(name: 'build-utils', shell: '/bin/sh') {
                             sh (script:'sh /tmp/scripts/create_repo.sh')
-                           //sh (script:'echo \$REPO_LIST')
+                            sh (script:'echo \$REPO_LIST')
                         }
                     }
         }
