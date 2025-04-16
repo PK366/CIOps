@@ -41,15 +41,12 @@ spec:
         cpu: "2000m"      
   - name: git
     image: docker.io/egovio/builder:2-64da60a1-version_script_update-NA
-    imagePullPolicy: IfNotPresent
-    command:
-    - cat
-    tty: true        
+    imagePullPolicy: IfNotPresent       
   volumes:
   - name: kaniko-cache
     persistentVolumeClaim:
       claimName: kaniko-cache-claim
-      readOnly: true       
+      ReadWriteMany: true       
   - name: jenkins-docker-cfg
     projected:
       sources:
