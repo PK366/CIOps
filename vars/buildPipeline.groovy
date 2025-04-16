@@ -16,6 +16,9 @@ spec:
   - name: kaniko
     image: gcr.io/kaniko-project/executor:debug-v0.15.0
     imagePullPolicy: IfNotPresent
+    command:
+    - /busybox/cat
+    tty: true
     env:
       - name: GIT_ACCESS_TOKEN
         valueFrom:
@@ -34,19 +37,22 @@ spec:
         mountPath: /cache            
     resources:
       requests:
-        memory: "2050Mi"
-        cpu: "1000m"
+        memory: "1792Mi"
+        cpu: "750m"
       limits:
-        memory: "4100Mi"
-        cpu: "2000m"      
+        memory: "3954Mi"
+        cpu: "1500m"      
   - name: git
     image: docker.io/egovio/builder:2-64da60a1-version_script_update-NA
-    imagePullPolicy: IfNotPresent       
+    imagePullPolicy: IfNotPresent
+    command:
+    - cat
+    tty: true        
   volumes:
   - name: kaniko-cache
     persistentVolumeClaim:
       claimName: kaniko-cache-claim
-      ReadWriteMany: true       
+      readOnly: true        
   - name: jenkins-docker-cfg
     projected:
       sources:
@@ -60,7 +66,7 @@ spec:
         node(POD_LABEL) {
 
             def scmVars = checkout scm
-            String REPO_NAME = env.REPO_NAME ? env.REPO_NAME : "docker.io/pk366";         
+            String REPO_NAME = env.REPO_NAME ? env.REPO_NAME : "docker.io/sparrowsoftech";         
             String GCR_REPO_NAME = "asia.gcr.io/digit-egov";
             def yaml = readYaml file: pipelineParams.configFile;
             List<JobConfig> jobConfigs = ConfigParser.parseConfig(yaml, env);
@@ -121,7 +127,7 @@ spec:
                                     --destination=${image} \
                                     --destination=${gcr_image} \
                                     --no-push=${noPushImage} \
-                                    --cache-repo=pk366/cache/cache
+                                    --cache-repo=sparrowsoftech/cache/cache
                                   """  
                                   echo "${image} and ${gcr_image} pushed successfully!!"                              
                                 }
@@ -136,7 +142,7 @@ spec:
                                     --snapshotMode=time \
                                     --destination=${image} \
                                     --no-push=${noPushImage} \
-                                    --cache-repo=pk366/cache/cache
+                                    --cache-repo=sparrowsoftech/cache/cache
                                 """
                                 echo "${image} pushed successfully!"
                                 }                                
