@@ -59,7 +59,7 @@ spec:
       - secret:
           name: jenkins-credentials
           items:
-            - key: .dockerconfigjson
+            - key: dockerConfigJson
               path: config.json          
 """
     ) {
