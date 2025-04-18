@@ -12,7 +12,7 @@ metadata:
 spec:
   containers:
   - name: build-utils
-    image: egovio/build-utils:17-master-95e76687
+    image: egovio/build-utils:7-master-95e76687
     imagePullPolicy: IfNotPresent
     command:
     - cat
@@ -29,7 +29,7 @@ spec:
             name: jenkins-credentials
             key: dockerPassword
       - name: DOCKER_NAMESPACE
-        value: pk366
+        value: sparrowsoftech
       - name: DOCKER_GROUP_NAME  
         value: dev
     resources:
@@ -129,16 +129,11 @@ spec:
         }
 
         stage('Creating Repositories in DockerHub') {
-                    withEnv(["REPO_LIST=${repoList}"]) {
+                    withEnv(["REPO_LIST=${repoList}"
+                    ]) {
                         container(name: 'build-utils', shell: '/bin/sh') {
-                            sh 'echo "--- Contents of create_repo.sh ---"'
-                            sh 'cat /tmp/scripts/create_repo.sh'
-                            sh 'echo "----------------------------------"'
                             sh (script:'sh /tmp/scripts/create_repo.sh')
-                            sh 'echo "Files in /tmp/scripts:"'
-                            sh 'ls -la /tmp/scripts'
-
-                            //sh (script:'echo \$REPO_LIST')
+                           //sh (script:'echo \$REPO_LIST')
                         }
                     }
         }
