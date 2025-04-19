@@ -16,7 +16,7 @@ spec:
   - name: kaniko
     image: gcr.io/kaniko-project/executor:v1.11.0
     imagePullPolicy: IfNotPresent
-    command:''
+    command:[]
     tty: true
     env:
       - name: GIT_ACCESS_TOKEN
