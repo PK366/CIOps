@@ -118,7 +118,7 @@ spec:
                                   String gcr_image = "${GCR_REPO_NAME}/${buildConfig.getImageName()}:${env.BUILD_NUMBER}-${scmVars.BRANCH}-${scmVars.VERSION}-${scmVars.ACTUAL_COMMIT}";
                                   sh """
                                     echo \"Attempting to build image,  ${image}\"
-                                    /kaniko/executor --force -f `pwd`/${buildConfig.getDockerFile()} -c `pwd`/${buildConfig.getContext()} -e container=docker \
+                                    /kaniko/executor --force -f `pwd`/${buildConfig.getDockerFile()} -c `pwd`/${buildConfig.getContext()} \
                                     --build-arg WORK_DIR=${workDir} \
                                     --build-arg token=\$GIT_ACCESS_TOKEN \
                                     --cache=true --cache-dir=/cache \
