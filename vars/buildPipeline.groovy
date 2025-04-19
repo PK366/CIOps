@@ -16,7 +16,8 @@ spec:
   - name: kaniko
     image: gcr.io/kaniko-project/executor:latest
     imagePullPolicy: IfNotPresent
-    command:''
+    command:'/kaniko/executor',
+    args: ['--help'],
     #- /busybox/cat
     tty: true
     env:
