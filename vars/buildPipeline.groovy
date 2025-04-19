@@ -95,7 +95,7 @@ spec:
                 stage('Build with Kaniko') {
                     withEnv(["PATH=/busybox:/kaniko:$PATH"
                     ]) {
-                        container(name: 'kaniko', shell: '/busybox/sh') {
+                        container(name: 'kaniko') {
 
                             for(int j=0; j<jobConfig.getBuildConfigs().size(); j++){
                                 BuildConfig buildConfig = jobConfig.getBuildConfigs().get(j)
