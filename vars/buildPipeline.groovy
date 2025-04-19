@@ -14,10 +14,10 @@ metadata:
 spec:
   containers:
   - name: kaniko
-    image: gcr.io/kaniko-project/executor:v1.5.1
+    image: gcr.io/kaniko-project/executor:debug-v0.15.0
     imagePullPolicy: IfNotPresent
-    # command:
-    # - /busybox/cat
+    command:
+    - /busybox/cat
     tty: true
     env:
       - name: GIT_ACCESS_TOKEN
@@ -95,7 +95,7 @@ spec:
                 stage('Build with Kaniko') {
                     withEnv(["PATH=/busybox:/kaniko:$PATH"
                     ]) {
-                        container(name: 'kaniko') {
+                        container(name: 'kaniko', shell: '/busybox/sh') {
 
                             for(int j=0; j<jobConfig.getBuildConfigs().size(); j++){
                                 BuildConfig buildConfig = jobConfig.getBuildConfigs().get(j)
@@ -118,7 +118,7 @@ spec:
                                   String gcr_image = "${GCR_REPO_NAME}/${buildConfig.getImageName()}:${env.BUILD_NUMBER}-${scmVars.BRANCH}-${scmVars.VERSION}-${scmVars.ACTUAL_COMMIT}";
                                   sh """
                                     echo \"Attempting to build image,  ${image}\"
-                                    /kaniko/executor --docker-config /home/sspl/.docker/config.json -f `pwd`/${buildConfig.getDockerFile()} -c `pwd`/${buildConfig.getContext()} \
+                                    /kaniko/executor -f `pwd`/${buildConfig.getDockerFile()} -c `pwd`/${buildConfig.getContext()} \
                                     --build-arg WORK_DIR=${workDir} \
                                     --build-arg token=\$GIT_ACCESS_TOKEN \
                                     --cache=true --cache-dir=/cache \
@@ -134,7 +134,7 @@ spec:
                                 else{
                                 sh """
                                     echo \"Attempting to build image,  ${image}\"
-                                    /kaniko/executor --docker-config /home/sspl/.docker/config.json -f `pwd`/${buildConfig.getDockerFile()} -c `pwd`/${buildConfig.getContext()} \
+                                    /kaniko/executor -f `pwd`/${buildConfig.getDockerFile()} -c `pwd`/${buildConfig.getContext()} \
                                     --build-arg WORK_DIR=${workDir} \
                                     --build-arg token=\$GIT_ACCESS_TOKEN \
                                     --cache=true --cache-dir=/cache \
