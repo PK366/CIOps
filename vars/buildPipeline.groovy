@@ -14,11 +14,10 @@ metadata:
 spec:
   containers:
   - name: kaniko
-    image: gcr.io/kaniko-project/executor:latest
+    image: gcr.io/kaniko-project/executor:debug-v0.15.0
     imagePullPolicy: IfNotPresent
-    command:'/kaniko/executor',
-    args: ['--help'],
-    #- /busybox/cat
+    command:
+    - /busybox/cat
     tty: true
     env:
       - name: GIT_ACCESS_TOKEN
