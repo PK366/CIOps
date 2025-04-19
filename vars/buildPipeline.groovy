@@ -16,8 +16,8 @@ spec:
   - name: kaniko
     image: gcr.io/kaniko-project/executor:v1.5.1
     imagePullPolicy: IfNotPresent
-    command:
-    - /busybox/cat
+    // command:
+    // - /busybox/cat
     tty: true
     env:
       - name: GIT_ACCESS_TOKEN
